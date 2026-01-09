@@ -14,7 +14,7 @@ export const analyzeCode = async (code: string): Promise<DiagnosisResponse> => {
     throw new Error("API Key is missing in environment variables.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: ‘AIzaSyBt_urjuzsLGOdGnNdMdRq8rE5wfPMV69Q’ });
   const cleanedCode = cleanCode(code);
 
   const prompt = `
