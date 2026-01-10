@@ -9,5 +9,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  base: '/', 
+  // 👇 这一段是解决黑屏的关键！
+  // 它告诉浏览器："如果看到 process.env，别报错，就当它是个空对象"
+  define: {
+    'process.env': {},
+  },
+  base: '/',
 })
