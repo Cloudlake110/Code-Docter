@@ -10,11 +10,16 @@ const cleanCode = (code: string): string => {
 };
 
 export const analyzeCode = async (code: string): Promise<DiagnosisResponse> => {
+  console.log(`[CodeDoctor] Starting analysis. Code length: ${code.length}`);
+  
   if (!process.env.API_KEY) {
+    console.error("[CodeDoctor] Critical Error: API Key is missing in environment variables.");
     throw new Error("API Key is missing in environment variables.");
+  } else {
+    console.log("[CodeDoctor] API Key present.");
   }
 
-  const ai = new GoogleGenAI({ apiKey: ‘AIzaSyBt_urjuzsLGOdGnNdMdRq8rE5wfPMV69Q’ });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const cleanedCode = cleanCode(code);
 
   const prompt = `
@@ -94,6 +99,7 @@ export const analyzeCode = async (code: string): Promise<DiagnosisResponse> => {
 
   while (attempts < maxAttempts) {
     try {
+      console.log(`[CodeDoctor] Attempt ${attempts + 1}/${maxAttempts} - Sending request to Gemini...`);
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -106,19 +112,32 @@ export const analyzeCode = async (code: string): Promise<DiagnosisResponse> => {
       });
 
       if (!response.text) {
+        console.warn("[CodeDoctor] Received empty response from API.");
         throw new Error("Empty response from AI");
       }
 
-      return JSON.parse(response.text) as DiagnosisResponse;
+      console.log("[CodeDoctor] Response received. Length:", response.text.length);
+      // Helpful for debugging bad JSON structure
+      if (process.env.NODE_ENV === 'development') {
+         console.debug("[CodeDoctor] Raw text snippet:", response.text.substring(0, 500));
+      }
+
+      const parsedData = JSON.parse(response.text) as DiagnosisResponse;
+      console.log("[CodeDoctor] JSON parsed successfully. Trace steps:", parsedData.trace?.length);
+      return parsedData;
 
     } catch (error) {
       attempts++;
-      console.error(`Attempt ${attempts} failed:`, error);
+      console.error(`[CodeDoctor] Analysis failed on attempt ${attempts}:`, error);
       
       if (attempts >= maxAttempts) {
+        console.error("[CodeDoctor] Exhausted all retry attempts.");
         throw new Error("Failed to analyze code after multiple attempts. Please try again.");
       }
-      await sleep(1000 * Math.pow(2, attempts - 1));
+      
+      const backoff = 1000 * Math.pow(2, attempts - 1);
+      console.log(`[CodeDoctor] Waiting ${backoff}ms before retry...`);
+      await sleep(backoff);
     }
   }
 

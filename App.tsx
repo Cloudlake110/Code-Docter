@@ -22,26 +22,41 @@ const App: React.FC = () => {
   useEffect(() => {
     const saved = localStorage.getItem('code_doctor_flashcards');
     if (saved) {
-      setFlashcards(JSON.parse(saved));
+      try {
+        const parsed = JSON.parse(saved);
+        setFlashcards(parsed);
+        console.log(`[CodeDoctor] Initialized: Loaded ${parsed.length} flashcards.`);
+      } catch (e) {
+        console.error("[CodeDoctor] Error parsing saved flashcards:", e);
+      }
+    } else {
+      console.log("[CodeDoctor] Initialized: No saved flashcards found.");
     }
   }, []);
 
   // Save flashcards whenever they change
   useEffect(() => {
+    console.log(`[CodeDoctor] Syncing ${flashcards.length} flashcards to localStorage.`);
     localStorage.setItem('code_doctor_flashcards', JSON.stringify(flashcards));
   }, [flashcards]);
 
   const handleDiagnose = async () => {
-    if (!code.trim()) return;
+    if (!code.trim()) {
+      console.warn("[CodeDoctor] Diagnosis blocked: Empty code input.");
+      return;
+    }
 
+    console.log("[CodeDoctor] Diagnosis triggered.");
     setDiagnosisState({ status: 'analyzing', result: null, error: null });
 
     try {
       const result = await analyzeCode(code);
+      console.log("[CodeDoctor] Diagnosis complete:", result);
       setDiagnosisState({ status: 'complete', result, error: null });
 
       // Process new flashcards from the analysis
       if (result.generatedFlashcards && result.generatedFlashcards.length > 0) {
+        console.log(`[CodeDoctor] Processing ${result.generatedFlashcards.length} new flashcards.`);
         const newCards: Flashcard[] = result.generatedFlashcards.map((data, index) => ({
           ...data,
           id: `${Date.now()}-${index}`,
@@ -52,11 +67,13 @@ const App: React.FC = () => {
           }
         }));
         
-        // Add new cards to the deck (avoiding duplicates based on code content could be a future enhancement)
         setFlashcards(prev => [...prev, ...newCards]);
+      } else {
+        console.log("[CodeDoctor] No new flashcards in response.");
       }
 
     } catch (err: any) {
+      console.error("[CodeDoctor] Diagnosis error:", err);
       setDiagnosisState({
         status: 'error',
         result: null,
@@ -66,10 +83,12 @@ const App: React.FC = () => {
   };
 
   const reset = () => {
+    console.log("[CodeDoctor] Resetting view.");
     setDiagnosisState({ status: 'idle', result: null, error: null });
   };
 
   const handleUpdateCard = (id: string, isCorrect: boolean) => {
+    console.log(`[CodeDoctor] Updating card ${id} - Correct: ${isCorrect}`);
     setFlashcards(prev => prev.map(card => {
       if (card.id !== id) return card;
 
@@ -80,6 +99,7 @@ const App: React.FC = () => {
         // If 3 consecutive correct answers, mark as mastered
         if (newStats.correctStreak >= 3) {
           newStats.status = 'mastered';
+          console.log(`[CodeDoctor] Card ${id} mastered!`);
         } else {
           newStats.status = 'learning';
         }
@@ -89,6 +109,7 @@ const App: React.FC = () => {
         // If 3 total errors, mark as critical
         if (newStats.incorrectCount >= 3) {
           newStats.status = 'critical';
+          console.log(`[CodeDoctor] Card ${id} marked critical.`);
         }
       }
 
@@ -97,7 +118,9 @@ const App: React.FC = () => {
   };
   
   const clearMasteredCards = () => {
+    const countBefore = flashcards.length;
     setFlashcards(prev => prev.filter(c => c.stats.status !== 'mastered'));
+    console.log(`[CodeDoctor] Cleared mastered cards. Count reduced from ${countBefore} to ${flashcards.length}.`);
   };
 
   const activeCardsCount = flashcards.filter(c => c.stats.status !== 'mastered').length;
@@ -108,7 +131,10 @@ const App: React.FC = () => {
       {isReviewMode && (
         <FlashcardReview 
           cards={flashcards} 
-          onClose={() => setIsReviewMode(false)}
+          onClose={() => {
+            console.log("[CodeDoctor] Closing review mode.");
+            setIsReviewMode(false);
+          }}
           onUpdateCard={handleUpdateCard}
         />
       )}
@@ -133,7 +159,12 @@ const App: React.FC = () => {
              {/* Flashcard Button */}
              <div className="relative">
                 <button 
-                  onClick={() => activeCardsCount > 0 && setIsReviewMode(true)}
+                  onClick={() => {
+                    if (activeCardsCount > 0) {
+                      console.log("[CodeDoctor] Opening review mode.");
+                      setIsReviewMode(true);
+                    }
+                  }}
                   disabled={activeCardsCount === 0}
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-full border transition-all text-sm font-bold

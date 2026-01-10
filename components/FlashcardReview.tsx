@@ -50,6 +50,8 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({ cards, onClose
     // Simple normalization: remove whitespace to compare logic
     const normalize = (str: string) => str.replace(/\s+/g, '').trim();
     const isCorrect = normalize(userInput) === normalize(currentCard.backCode);
+    
+    console.log(`[CodeDoctor] Card Review - Concept: "${currentCard.concept}" | Result: ${isCorrect ? 'PASS' : 'FAIL'}`);
 
     setShowResult(isCorrect ? 'correct' : 'incorrect');
     onUpdateCard(currentCard.id, isCorrect);
