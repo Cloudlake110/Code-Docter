@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Play, RotateCcw, Cpu, AlertTriangle, CheckCircle, BrainCircuit, Trash2 } from 'lucide-react';
+import { Activity, Play, RotateCcw, Cpu, AlertTriangle, CheckCircle, BrainCircuit, Trash2, Home } from 'lucide-react';
 import { CodeEditor } from './components/CodeEditor';
 import { TraceMap } from './components/TraceMap';
 import { FlashcardReview } from './components/FlashcardReview';
 import { analyzeCode } from './services/geminiService';
 import { DiagnosisState, Flashcard } from './types';
+
+const PORTAL_URL = "https://ai-trainer-porama-system.vercel.app/";
 
 const App: React.FC = () => {
   const [code, setCode] = useState<string>('');
@@ -341,6 +343,17 @@ const App: React.FC = () => {
           </section>
         </main>
       </div>
+
+      <a
+        href={PORTAL_URL}
+        className="fixed bottom-6 right-6 z-50 p-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md transition-all duration-300 hover:scale-110 hover:-translate-y-1 group flex items-center gap-0 hover:gap-2 overflow-hidden border border-white/20"
+        title="返回备考系统门户"
+      >
+        <Home className="w-6 h-6" />
+        <span className="max-w-0 group-hover:max-w-xs transition-all duration-500 ease-in-out whitespace-nowrap opacity-0 group-hover:opacity-100 text-sm font-bold">
+          返回门户
+        </span>
+      </a>
     </div>
   );
 };
